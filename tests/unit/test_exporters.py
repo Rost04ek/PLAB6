@@ -14,4 +14,10 @@ def test_import_malformed_csv_exception_chaining(tmp_path):
     csv_file.write_text("task_id,priority,estimated_hours\n10,Low,INVALID\n", encoding="utf-8")
     with pytest.raises(MalformedTaskRecord) as exc_info:
         import_tasks_csv(csv_file)
+    # Advanced: exception chaining test
     assert isinstance(exc_info.value.__cause__, ValueError)
+
+def test_atomic_file_output(tmp_path, populated_board):
+    file_path = tmp_path / "atomic.json"
+    export_tasks_json(populated_board._tasks, file_path)
+    assert file_path.exists()

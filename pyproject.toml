@@ -15,8 +15,9 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --cov=src.tasks --cov-branch --cov-report=term-missing --cov-report=html"
 markers = [
     "integration: integration tests"
 ]
@@ -28,4 +29,5 @@ source = ["src/tasks"]
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = false
 fail_under = 80

@@ -20,6 +20,7 @@ def test_average_estimation_approx(populated_board):
     assert populated_board.average_estimation() == pytest.approx(3.6666666666666665)
 
 def test_workflow_complete_task_success(basic_task, fake_repo):
+    # Advanced: autospec
     mock_notifier = create_autospec(Notifier, instance=True)
     service = TaskWorkflowService(fake_repo, mock_notifier)
     assert service.complete_task(basic_task) is True
