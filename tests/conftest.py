@@ -1,5 +1,6 @@
 import pytest
-from src.tasks.core import Task, BugTask, FeatureTask, TaskBoard
+from src.tasks.models import Task, BugTask, FeatureTask
+from src.tasks.services import TaskBoard
 
 @pytest.fixture(autouse=True)
 def setup_default_env(monkeypatch):
@@ -23,14 +24,8 @@ def populated_board(basic_task, bug_task, feature_task):
     board.add_task(basic_task)
     board.add_task(bug_task)
     board.add_task(feature_task)
-    yield board  # Перевірка fixture teardown
+    yield board
     board._tasks.clear()
-
-@pytest.fixture
-def task_factory():
-    def _create_task(task_id=10, title="Factory Task", priority="Low", estimated_hours=2.0):
-        return Task(task_id=task_id, title=title, priority=priority, estimated_hours=estimated_hours)
-    return _create_task
 
 class FakeTaskRepository:
     def __init__(self):

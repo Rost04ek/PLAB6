@@ -1,5 +1,5 @@
 import pytest
-from src.tasks.core import get_allowed_statuses, get_allowed_priorities
+from src.tasks.config import get_allowed_statuses, get_allowed_priorities
 
 def test_config_allowed_statuses(monkeypatch):
     monkeypatch.setenv("ALLOWED_STATUSES", "Draft,Published")
