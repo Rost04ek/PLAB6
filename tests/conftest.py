@@ -2,10 +2,6 @@ import pytest
 from application.models import Task, BugTask, FeatureTask
 from application.services import TaskBoard
 
-@pytest.fixture(autouse=True)
-def setup_default_env(monkeypatch):
-    monkeypatch.setenv("TEST_RUN", "true")
-
 @pytest.fixture
 def basic_task():
     return Task(task_id=1, title="Setup CI", priority="High", estimated_hours=4.5)
@@ -25,7 +21,7 @@ def populated_board(basic_task, bug_task, feature_task):
     board.add_task(bug_task)
     board.add_task(feature_task)
     yield board
-    board.tasks.clear()
+    board._tasks.clear()
 
 class FakeTaskRepository:
     def __init__(self):
@@ -38,14 +34,8 @@ class FakeTaskRepository:
 def fake_repo():
     return FakeTaskRepository()
 
-# Fixture Factory
 @pytest.fixture
 def task_factory():
     def _create(task_id=99, title="Fac", priority="Low", estimated_hours=1.0):
         return Task(task_id, title, priority, estimated_hours)
     return _create
-
-# Parameterized Fixture
-@pytest.fixture(params=["Medium", "High"])
-def param_task(request):
-    return Task(100, "P", request.param, 2.0)
