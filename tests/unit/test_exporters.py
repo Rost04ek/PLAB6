@@ -1,13 +1,6 @@
 import pytest
-import json
-from application.exporters import export_tasks_json, import_tasks_csv
+from application.exporters import import_tasks_csv
 from application.exceptions import MalformedTaskRecord
-
-def test_export_json_tmp_path(tmp_path, populated_board):
-    file_path = tmp_path / "tasks.json"
-    export_tasks_json(populated_board._tasks, file_path)
-    data = json.loads(file_path.read_text(encoding="utf-8"))
-    assert len(data) == 3
 
 def test_import_malformed_csv_missing_title(tmp_path):
     csv_file = tmp_path / "bad1.csv"

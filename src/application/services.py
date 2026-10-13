@@ -1,21 +1,22 @@
+from typing import Optional, List
 from application.models import Task
 from application.exceptions import InvalidTaskError
 from application.repositories import TaskRepository, Notifier, AsyncTaskRepository
 
 class TaskBoard:
     def __init__(self):
-        self._tasks: list[Task] = []
+        self._tasks: List[Task] = []
         
     def add_task(self, task: Task):
         self._tasks.append(task)
         
-    def filter_by_priority(self, priority: str) -> list[Task]:
+    def filter_by_priority(self, priority: str) -> List[Task]:
         return [t for t in self._tasks if t.priority == priority]
         
-    def filter_by_status(self, status: str) -> list[Task]:
+    def filter_by_status(self, status: str) -> List[Task]:
         return [t for t in self._tasks if t.status == status]
         
-    def find_task(self, task_id: int) -> Task | None:
+    def find_task(self, task_id: int) -> Optional[Task]:
         for t in self._tasks:
             if t.task_id == task_id:
                 return t

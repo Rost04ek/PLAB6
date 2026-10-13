@@ -1,14 +1,15 @@
 import csv
 import json
 from pathlib import Path
+from typing import List
 from application.models import Task
 from application.exceptions import MalformedTaskRecord
 
-def export_tasks_json(tasks: list[Task], path: Path) -> None:
+def export_tasks_json(tasks: List[Task], path: Path) -> None:
     data = [{"id": t.task_id, "title": t.title, "status": t.status} for t in tasks]
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-def import_tasks_csv(path: Path) -> list[Task]:
+def import_tasks_csv(path: Path) -> List[Task]:
     tasks = []
     try:
         with open(path, mode="r", encoding="utf-8") as f:

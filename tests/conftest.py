@@ -1,6 +1,15 @@
+import sys
+import os
+# Абсолютно надійний хак для імпортів на будь-якому сервері
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
 import pytest
 from application.models import Task, BugTask, FeatureTask
 from application.services import TaskBoard
+
+@pytest.fixture(autouse=True)
+def setup_default_env(monkeypatch):
+    monkeypatch.setenv("TEST_RUN", "true")
 
 @pytest.fixture
 def basic_task():
