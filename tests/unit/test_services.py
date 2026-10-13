@@ -15,12 +15,15 @@ def test_board_filters_and_find(populated_board, basic_task):
     
     high_tasks = populated_board.filter_by_priority("High")
     assert len(high_tasks) == 1
+    
+    basic_task.change_status("In Progress")
+    in_prog = populated_board.filter_by_status("In Progress")
+    assert len(in_prog) == 1
 
 def test_average_estimation_approx(populated_board):
     assert populated_board.average_estimation() == pytest.approx(3.6666666666666665)
 
 def test_workflow_complete_task_success(basic_task, fake_repo):
-    # Advanced: autospec
     mock_notifier = create_autospec(Notifier, instance=True)
     service = TaskWorkflowService(fake_repo, mock_notifier)
     assert service.complete_task(basic_task) is True
@@ -47,3 +50,12 @@ async def test_async_fetch_remote_task_unit():
     async_repo.fetch_remote_task.return_value = {"id": 99, "status": "Remote"}
     result = await async_repo.fetch_remote_task(99)
     async_repo.fetch_remote_task.assert_awaited_once_with(99)
+    
+@pytest.mark.asyncio
+async def test_async_import_remote_task_not_found():
+    board = TaskBoard()
+    async_repo = AsyncMock(spec=AsyncTaskRepository)
+    async_repo.fetch_remote_task.return_value = None
+    service = TaskWorkflowService(Mock(), Mock())
+    with pytest.raises(InvalidTaskError, match="Remote task not found"):
+        await service.import_remote_task(99, async_repo, board)
