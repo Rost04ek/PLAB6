@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from .exceptions import InvalidTaskError, InvalidStatusTransition
-from .config import get_allowed_statuses, get_allowed_priorities
+from application.config import get_allowed_statuses, get_allowed_priorities
+
+class InvalidTaskError(Exception): pass
+class InvalidStatusTransition(Exception): pass
 
 @dataclass
 class Task:

@@ -1,6 +1,5 @@
-from typing import Protocol
-from .models import Task
-from .exceptions import InvalidTaskError
+from application.models import Task, InvalidTaskError
+from application.repositories import TaskRepository, Notifier, AsyncTaskRepository
 
 class TaskBoard:
     def __init__(self):
@@ -31,16 +30,6 @@ class TaskBoard:
         if not self._tasks:
             return 0.0
         return sum(t.estimated_hours for t in self._tasks) / len(self._tasks)
-
-class Notifier(Protocol):
-    def send_alert(self, task_id: int, message: str) -> None: ...
-
-class TaskRepository(Protocol):
-    def save(self, task: Task) -> bool: ...
-
-class AsyncTaskRepository:
-    async def fetch_remote_task(self, task_id: int) -> dict:
-        pass 
 
 class TaskWorkflowService:
     def __init__(self, repo: TaskRepository, notifier: Notifier):

@@ -1,10 +1,6 @@
 import pytest
-from src.tasks.models import Task, BugTask, FeatureTask
-from src.tasks.services import TaskBoard
-
-@pytest.fixture(autouse=True)
-def setup_default_env(monkeypatch):
-    monkeypatch.setenv("TEST_RUN", "true")
+from application.models import Task, BugTask, FeatureTask
+from application.services import TaskBoard
 
 @pytest.fixture
 def basic_task():
@@ -12,7 +8,7 @@ def basic_task():
 
 @pytest.fixture
 def bug_task():
-    return BugTask(task_id=2, title="Fix login", priority="Critical", estimated_hours=1.5, severity="Critical")
+    return BugTask(task_id=2, title="Fix login", priority="Critical", estimated_hours=1.5, severity="High")
 
 @pytest.fixture
 def feature_task():
@@ -37,13 +33,3 @@ class FakeTaskRepository:
 @pytest.fixture
 def fake_repo():
     return FakeTaskRepository()
-
-@pytest.fixture
-def task_factory():
-    def _create_task(task_id=99, title="Factory", priority="Low", estimated_hours=2.0):
-        return Task(task_id=task_id, title=title, priority=priority, estimated_hours=estimated_hours)
-    return _create_task
-
-@pytest.fixture(params=["High", "Critical"])
-def parameterized_task(request):
-    return Task(task_id=100, title="Param", priority=request.param, estimated_hours=1.0)

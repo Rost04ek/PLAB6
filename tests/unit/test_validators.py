@@ -1,11 +1,7 @@
 import pytest
-from src.tasks.models import Task
-from src.tasks.exceptions import InvalidTaskError, InvalidStatusTransition
+from application.models import Task, InvalidTaskError, InvalidStatusTransition
 
-@pytest.mark.parametrize("priority", [
-    pytest.param("Unknown", id="unknown_priority"),
-    pytest.param("SuperHigh", id="super_high_priority")
-])
+@pytest.mark.parametrize("priority", ["Unknown", "SuperHigh"])
 def test_invalid_priority_raises(priority):
     with pytest.raises(InvalidTaskError, match="Invalid priority"):
         Task(task_id=1, title="Bad", priority=priority, estimated_hours=1.0)
@@ -14,10 +10,7 @@ def test_negative_hours_raises():
     with pytest.raises(InvalidTaskError, match="negative"):
         Task(task_id=1, title="Bad", priority="Low", estimated_hours=-2.0)
 
-@pytest.mark.parametrize("status", [
-    pytest.param("In Progress", id="status_in_progress"),
-    pytest.param("Closed", id="status_closed")
-])
+@pytest.mark.parametrize("status", ["In Progress", "Closed"])
 def test_valid_status_change(basic_task, status):
     basic_task.change_status(status)
     assert basic_task.status == status
