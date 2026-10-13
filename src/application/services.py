@@ -1,11 +1,16 @@
-from application.models import Task, InvalidTaskError
+from application.models import Task
+from application.exceptions import InvalidTaskError
 from application.repositories import TaskRepository, Notifier, AsyncTaskRepository
 
 class TaskBoard:
     def __init__(self):
         self._tasks: list[Task] = []
         
-    def add_task(self, task: Task):
+    @property
+    def tasks(self) -> list[Task]:
+        return self._tasks
+        
+    def add_task(self, task: Task) -> None:
         self._tasks.append(task)
         
     def filter_by_priority(self, priority: str) -> list[Task]:
@@ -30,6 +35,20 @@ class TaskBoard:
         if not self._tasks:
             return 0.0
         return sum(t.estimated_hours for t in self._tasks) / len(self._tasks)
+
+# Додатково: Context Manager (для пункту 95 з методички)
+class TaskBoardSession:
+    def __init__(self, board: TaskBoard):
+        self.board = board
+        self.is_open = False
+
+    def __enter__(self):
+        self.is_open = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.is_open = False
+        self.board.tasks.clear()
 
 class TaskWorkflowService:
     def __init__(self, repo: TaskRepository, notifier: Notifier):
