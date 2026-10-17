@@ -1,17 +1,24 @@
-"""Модульні тести сервісів із використанням Mock, create_autospec, side_effect та AsyncMock."""
+"""Модульні тести сервісів із використанням Mock, MagicMock, patch, create_autospec, side_effect та AsyncMock."""
 
-from unittest.mock import AsyncMock, Mock, create_autospec
+from unittest.mock import AsyncMock, MagicMock, Mock, create_autospec, patch
 import pytest
 
-from task_manager.exceptions import (
+import application.services as services_mod
+from application.exceptions import (
     InvalidStatusTransitionError,
     NotificationError,
     TaskNotFoundError,
 )
-from task_manager.models import Task
-from task_manager.protocols import AsyncTaskRepository, Notifier, TaskRepository
-from task_manager.repositories import InMemoryTaskRepository
-from task_manager.services import AsyncTaskService, TaskService
+from application.models import Task
+from application.protocols import AsyncTaskRepository, Notifier, TaskRepository
+from application.repositories import InMemoryTaskRepository
+from application.services import (
+    AsyncTaskService,
+    TaskService,
+    generate_audit_id,
+    get_current_timestamp,
+    send_audit_log,
+)
 
 
 def test_create_task_saves_and_notifies_with_mock() -> None:
@@ -32,6 +39,7 @@ def test_create_task_saves_and_notifies_with_mock() -> None:
 
     assert created.task_id == 10
     assert created.priority == "high"
+    repo_mock.save.assert_called_once()
     repo_mock.save.assert_called_once_with(created)
     notifier_mock.notify.assert_called_once_with(
         "dev@example.com",
@@ -40,13 +48,16 @@ def test_create_task_saves_and_notifies_with_mock() -> None:
     )
 
 
-def test_create_task_uses_monkeypatched_default_priority(
+@patch("application.services.send_audit_log")
+def test_create_task_uses_patch_and_monkeypatch(
+    mock_audit: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
     fake_repository: InMemoryTaskRepository,
 ) -> None:
-    """Перевірка підміни функції у сервісі через monkeypatch.setattr та використання FakeRepository."""
+    """Перевірка unittest.mock.patch, monkeypatch.setattr та FakeRepository."""
     monkeypatch.setattr(
-        "task_manager.services.get_default_priority",
+        services_mod,
+        "get_default_priority",
         lambda: "critical",
     )
     notifier_mock = create_autospec(Notifier, instance=True)
@@ -56,7 +67,26 @@ def test_create_task_uses_monkeypatched_default_priority(
 
     assert task.priority == "critical"
     assert fake_repository.get_by_id(55) == task
+    mock_audit.assert_called_once_with("task_created", 55)
     notifier_mock.notify.assert_not_called()
+
+
+def test_deterministic_time_and_uuid_via_monkeypatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Детерміноване тестування часу та генерації UUID через monkeypatch.setattr."""
+    monkeypatch.setattr(services_mod, "generate_audit_id", lambda: "00000000-0000-0000-0000-000000000001")
+    monkeypatch.setattr(services_mod, "get_current_timestamp", lambda: "2026-10-17T12:00:00")
+
+    entry = send_audit_log("task_created", 1)
+    assert entry == {
+        "audit_id": "00000000-0000-0000-0000-000000000001",
+        "timestamp": "2026-10-17T12:00:00",
+        "event": "task_created",
+        "task_id": 1,
+    }
+    assert isinstance(generate_audit_id(), str)
+    assert "T" in get_current_timestamp()
 
 
 def test_transition_status_success_with_return_value(sample_task: Task) -> None:
@@ -95,7 +125,7 @@ def test_transition_status_invalid_does_not_save_or_notify(sample_task: Task) ->
     with pytest.raises(InvalidStatusTransitionError):
         service.transition_task_status(
             task_id=1,
-            new_status="done",  # з 'todo' одразу в 'done' заборонено
+            new_status="done",
             notify_email="qa@example.com",
         )
 
@@ -170,7 +200,6 @@ async def test_async_service_error_and_ratio_calculation(
     with pytest.raises(TaskNotFoundError):
         await async_service.complete_remote_task(404)
 
-    # Налаштовуємо послідовні повернення для fetch_all_by_status("done") та ("todo")
     async_repo.fetch_all_by_status.side_effect = [
         [task_factory(status="done"), task_factory(status="done")],
         [task_factory(status="todo")],
@@ -178,7 +207,6 @@ async def test_async_service_error_and_ratio_calculation(
     ratio = await async_service.calculate_remote_completion_ratio()
     assert ratio == pytest.approx(2 / 3)
 
-    # Перевірка для порожнього хмарного репозиторію
     async_repo.fetch_all_by_status.side_effect = [[], []]
     empty_ratio = await async_service.calculate_remote_completion_ratio()
     assert empty_ratio == pytest.approx(0.0)

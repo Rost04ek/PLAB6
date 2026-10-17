@@ -1,12 +1,24 @@
-"""Спільні fixtures для всього test suite (conftest.py)."""
+"""Спільні fixtures для всього test suite (tests/conftest.py)."""
 
 from collections.abc import Callable, Generator
 from pathlib import Path
 import pytest
 
-from task_manager.config import AppConfig
-from task_manager.models import BugTask, FeatureTask, Task, TaskBoard
-from task_manager.repositories import InMemoryTaskRepository, SQLiteTaskRepository
+from application.config import AppConfig
+from application.models import BugTask, FeatureTask, Task, TaskBoard
+from application.repositories import InMemoryTaskRepository, SQLiteTaskRepository
+
+
+@pytest.fixture(autouse=True)
+def reset_env_between_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Autouse fixture: гарантує ізоляцію змінних середовища між усіма тестами."""
+    monkeypatch.delenv("TASK_DEFAULT_PRIORITY", raising=False)
+
+
+@pytest.fixture(scope="module")
+def default_board_config() -> AppConfig:
+    """Fixture зі scope='module' для незмінної стандартної конфігурації дошки."""
+    return AppConfig()
 
 
 @pytest.fixture
@@ -51,12 +63,13 @@ def sample_feature() -> FeatureTask:
 
 @pytest.fixture
 def populated_board(
+    default_board_config: AppConfig,
     sample_task: Task,
     sample_bug: BugTask,
     sample_feature: FeatureTask,
 ) -> TaskBoard:
     """Фікстура заповненої дошки завдань (TaskBoard) із трьома різними завданнями."""
-    board = TaskBoard()
+    board = TaskBoard(config=default_board_config)
     board.add_task(sample_task)
     board.add_task(sample_bug)
     board.add_task(sample_feature)

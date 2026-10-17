@@ -1,16 +1,18 @@
-"""Модульні тести файлового імпорту CSV та експорту JSON через tmp_path."""
+"""Модульні тести файлового імпорту CSV та експорту JSON через tmp_path і MagicMock."""
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 import pytest
 
-from task_manager.exceptions import TaskImportError, TaskValidationError
-from task_manager.exporters import (
+import application.exporters as exporters_mod
+from application.exceptions import DataImportError, TaskImportError, TaskValidationError
+from application.exporters import (
     TempExportSession,
     export_tasks_to_json,
     import_tasks_from_csv,
 )
-from task_manager.models import BugTask, FeatureTask, TaskBoard
+from application.models import BugTask, FeatureTask, TaskBoard
 
 
 def test_import_tasks_from_csv_valid(tmp_path: Path) -> None:
@@ -47,6 +49,7 @@ def test_import_csv_malformed_numeric_record_chains_exception(tmp_path: Path) ->
     with pytest.raises(TaskImportError) as exc_info:
         import_tasks_from_csv(csv_file)
 
+    assert isinstance(exc_info.value, DataImportError)
     assert exc_info.value.line_number == 2
     assert isinstance(exc_info.value.__cause__, ValueError)
 
@@ -91,38 +94,65 @@ def test_export_tasks_to_json_creates_valid_file(
     assert len(data["tasks"]) == 3
 
 
-def test_atomic_export_preserves_old_file_on_failure(
+def test_atomic_export_preserves_old_file_and_cleans_tmp_on_replace_failure(
     tmp_path: Path,
     populated_board: TaskBoard,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Перевірка атомарності експорту: при збої старий файл не пошкоджується, а .tmp видаляється."""
+    """Перевірка атомарності експорту: якщо збій стається під час заміни файлу, .tmp видаляється, а старі дані цілі."""
     output_file = tmp_path / "atomic_report.json"
     output_file.write_text('{"status": "old_valid_data"}', encoding="utf-8")
     temp_file = output_file.with_suffix(".json.tmp")
 
-    def broken_dumps(*args, **kwargs):
-        raise OSError("Simulated disk serialization failure")
+    def broken_replace(src: Path, dst: Path) -> None:
+        raise OSError("Simulated atomic replace failure")
 
-    monkeypatch.setattr(json, "dumps", broken_dumps)
+    monkeypatch.setattr(exporters_mod, "_replace_atomic", broken_replace)
 
-    with pytest.raises(OSError, match="Simulated disk"):
+    with pytest.raises(OSError, match="Simulated atomic replace failure"):
         export_tasks_to_json(populated_board, output_file)
 
     assert output_file.read_text(encoding="utf-8") == '{"status": "old_valid_data"}'
     assert not temp_file.exists()
 
 
-def test_temp_export_session_context_manager_cleanup(tmp_path: Path) -> None:
-    """Перевірка коректного очищення ресурсу контекстним менеджером навіть при винятку всередині with."""
+def test_atomic_export_when_serialization_fails_before_tmp_created(
+    tmp_path: Path,
+    populated_board: TaskBoard,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Перевірка гілки except, коли temp_path ще не створено (помилка у json.dumps)."""
+    output_file = tmp_path / "early_fail.json"
+    monkeypatch.setattr(json, "dumps", lambda *a, **kw: (_ for _ in ()).throw(ValueError("Bad JSON")))
+
+    with pytest.raises(ValueError, match="Bad JSON"):
+        export_tasks_to_json(populated_board, output_file)
+
+    assert not output_file.exists()
+
+
+def test_temp_export_session_context_manager_and_magic_mock(tmp_path: Path) -> None:
+    """Перевірка контекстного менеджера TempExportSession (нормальний вихід, виняток та MagicMock)."""
     buf_path = tmp_path / "buffer.tmp"
     session = TempExportSession(buf_path)
+
+    with session as active:
+        assert active.is_open is True
+        assert buf_path.exists()
+    assert session.is_open is False
+    assert not buf_path.exists()
 
     with pytest.raises(RuntimeError, match="Abort export"):
         with session:
             assert session.is_open is True
-            assert buf_path.exists()
             raise RuntimeError("Abort export")
-
-    assert session.is_open is False
     assert not buf_path.exists()
+
+    # Використання MagicMock для імітації магічних методів контекстного менеджера (__enter__ / __exit__)
+    magic_stream = MagicMock()
+    magic_stream.__enter__.return_value = magic_stream
+    with magic_stream as s:
+        s.write('{"ok": true}')
+    magic_stream.__enter__.assert_called_once()
+    magic_stream.write.assert_called_once_with('{"ok": true}')
+    magic_stream.__exit__.assert_called_once()

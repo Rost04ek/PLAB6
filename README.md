@@ -1,6 +1,8 @@
-# Система керування завданнями (Варіант 14)
+# Лабораторна робота №6 — Автоматизоване тестування Python-програм (Варіант 14)
 
-Навчальний Python-проєкт для Лабораторної роботи №6 «Автоматизоване тестування Python-програм».
+**Студент:** Козачок Ростислав Михайлович  
+**Група:** ФЕП-23с  
+**Варіант:** 14 («Система керування завданнями»)
 
 ## Встановлення
 
@@ -8,22 +10,8 @@
 python -m pip install -e ".[dev]"
 ```
 
-## Запуск тестів та перевірка покриття
-
-Запуск усього test suite з аналізом statement та branch coverage і генерацією HTML-звіту:
+## Запуск тестів та формування звіту про покриття (Coverage)
 
 ```bash
-pytest -v --cov=task_manager --cov-branch --cov-report=term-missing --cov-report=html
-```
-
-Запуск лише модульних (unit) тестів:
-
-```bash
-pytest -m "not integration"
-```
-
-Запуск лише інтеграційних тестів:
-
-```bash
-pytest -m integration
+pytest -v --cov=application --cov-branch --cov-report=term-missing --cov-report=html
 ```
