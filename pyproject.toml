@@ -1,21 +1,43 @@
 [build-system]
-requires = ["setuptools>=42.0"]
+requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "application"
-version = "0.1.0"
+name = "task_manager"
+version = "1.0.0"
+description = "Система керування завданнями (Лабораторна робота №6, Варіант 14)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-ra --cov=application --cov-branch --cov-report=term-missing"
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+]
 markers = [
-    "integration: integration tests"
+    "integration: integration tests verifying multi-component workflows",
+    "slow: slow running tests",
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["application"]
+source = ["task_manager"]
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = false
+fail_under = 85
