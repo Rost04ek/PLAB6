@@ -1,0 +1,22 @@
+input:
+  path: data/tasks.csv
+
+output:
+  path: output/tasks.json
+
+processing:
+  skip_invalid: false
+  allowed_priorities:
+    - Low
+    - Medium
+    - High
+    - Critical
+  allowed_statuses:
+    - To Do
+    - In Progress
+    - Review
+    - Done
+
+logging:
+  level: INFO
+  path: logs/application.log

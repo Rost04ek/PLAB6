@@ -1,0 +1,9 @@
+task_id,title,description,priority,status
+1,Setup database,Install PostgreSQL,High,Done
+2,,Empty title task,Medium,To Do
+3,Write tests,Unit tests for auth,Medium,In Progress
+abc,Invalid ID task,Should fail ID validation,Low,To Do
+4,Deploy app,Deploy to production,Critical,Review
+5,Fix bug 42,Fix UI glitch,Urgent,To Do
+6,Update docs,Update README,Low,UnknownStatus
+7,Clean codebase,Refactor legacy code,Medium,To Do

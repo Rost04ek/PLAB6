@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: reliable_importer
+Version: 0.1.0
+Summary: Lab 5 - Variant 14
+Requires-Dist: PyYAML>=6.0
